@@ -91,6 +91,7 @@ export class UserserviceService {
     return this.http.get(`http://localhost/Angularform/index.php?id=${id}`);
   }
   user(){
+    console.log("Jai Shree Ram");
 
   }
 }
