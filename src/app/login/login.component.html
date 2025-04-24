@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>login</title>
+</head>
+<body>
+  <form class="" [formGroup]="loginForm">
+    <div class="col-auto">
+        <label><h2>Email :</h2></label>
+        <input type="email" class="form-control" name="email" formControlName="email">
+
+        <label><h2>Password :</h2></label>
+        <input type="password" class="form-control" name="password" formControlName="password">
+
+        <button class="btn btn-outline-primary" (click)="login()">Login</button>
+      </div>
+    <!-- <p *ngIf="errorMessage">{{ errorMessage }}</p>
+    <p *ngIf="successMessage">{{ successMessage }}</p> -->
+    <!-- <p *ngIf="loading">Loading...</p> -->
+  </form>
+</body>
+</html>

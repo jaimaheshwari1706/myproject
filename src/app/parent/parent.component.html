@@ -1,0 +1,4 @@
+<!-- <app-child [item]="data"></app-child> -->
+<!-- <button (click)="updateBtn()">click me</button> -->
+<h1>{{data}}</h1>
+<app-child (updateEvent)="update($event)"></app-child>
