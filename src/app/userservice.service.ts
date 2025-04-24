@@ -92,6 +92,6 @@ export class UserserviceService {
   }
   user(){
     console.log("Jai Shree Ram");
-
+    
   }
 }
