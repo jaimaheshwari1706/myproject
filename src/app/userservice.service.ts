@@ -90,8 +90,5 @@ export class UserserviceService {
   delete(id: any) {
     return this.http.get(`http://localhost/Angularform/index.php?id=${id}`);
   }
-  user(){
-    console.log("Jai Shree Ram");
 
-  }
 }
