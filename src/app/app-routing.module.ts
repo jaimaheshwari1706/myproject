@@ -36,7 +36,9 @@ const routes: Routes = [
   },
   {
     path: 'table2',
-    component: OrgtableComponent
+    component: OrgtableComponent,
+    canActivate: [AuthGuard] // Protect this route with AuthGuard
+
   },
   { path: '**', redirectTo: 'login' }
 ];
