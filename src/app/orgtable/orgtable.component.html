@@ -3,22 +3,34 @@
     <div class="d-flex justify-content-end mb-3">
       <a class="btn btn-danger" (click)="logout()">Logout</a>
     </div>
-  <h3 class="my-5 text-center"><b>O - R - G ____ C - R - U - D</b></h3>
-  <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="mb-4" />
-  <table id="table2" class="display" width="100%">
-  <thead>
-    <tr>
-      <th>Id</th>
-      <th>Name</th>
-      <th>Code</th>
-      <th>OrganizationId</th>
-      <th>Gender</th>
-      <!-- <th>Action</th> -->
-    </tr>
-  </thead>
-  <tbody>
-
-  </tbody>
-</table>
+    <h3 class="my-5 text-center"><b>O - R - G ____ C - R - U - D</b></h3>
+    <div style="display: flex; justify-content: end; align-items: end; gap: 2px;">
+      <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="bi bi-calendar">
+      <button type="button" class="btn btn-primary" (click)="filterByDay(selectedDate)">Day</button>
+      <button type="button" class="btn btn-primary" (click)="filterByWeek()">Week</button>
+      <div>
+        <select [(ngModel)]="selectedMonth" class="form-select">
+          <option *ngFor="let month of months" [value]="month">{{ month }}</option>
+        </select>
+        <select [(ngModel)]="selectedYear" class="form-select">
+          <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+        </select>
+        <button type="button" class="btn btn-primary" (click)="filterByMonth(selectedMonth, selectedYear)">Month</button>
+      </div>
+    </div>
+    <table id="table2" class="display" width="100%">
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Name</th>
+          <th>Code</th>
+          <th>OrganizationId</th>
+          <th>Gender</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data will be populated here -->
+      </tbody>
+    </table>
+  </div>
 </div>
-

@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { UserserviceService } from '../userservice.service';
+import { HttpClient } from '@angular/common/http';
 declare var $: any; // Keep jQuery declaration if needed
 
 @Component({
@@ -8,13 +9,19 @@ declare var $: any; // Keep jQuery declaration if needed
   styleUrls: ['./orgtable.component.css']
 })
 export class OrgtableComponent implements OnInit, AfterViewInit {
-
-  selectedDate: string = '';
+  startDate: string = '';
+  endDate: string = '';
+  selectedMonth: string = '';
+  selectedYear: string = '';
   dataTable: any;
+  selectedDate: string = new Date().toISOString().substring(0, 10); // default to today
 
-  constructor(private service: UserserviceService) { }
+  constructor(private service: UserserviceService,
+    private http: HttpClient
+  ) { }
 
   ngOnInit(): void {
+    // Load saved date from localStorage
     const savedDate = localStorage.getItem('orgTableDate');
     if (savedDate) {
       this.selectedDate = savedDate;
@@ -32,14 +39,12 @@ export class OrgtableComponent implements OnInit, AfterViewInit {
       processing: true,
       serverSide: true,
       stateSave: true,
-      // pageLength: 5,
       lengthMenu: [5, 10, 25, 50],
       info: false,
       dom: 'Blfrtip.',
       buttons: [
         {
           extend: 'csvHtml5',
-          // text: 'Export All',
           exportOptions: {
             modifier: {
               page: 'all'
@@ -50,7 +55,6 @@ export class OrgtableComponent implements OnInit, AfterViewInit {
         {
           extend: 'pdfHtml5',
           orientation: 'landscape',
-          // pageSize: 'A4',
           exportOptions: {
             modifier: {
               page: 'all'
@@ -62,15 +66,8 @@ export class OrgtableComponent implements OnInit, AfterViewInit {
       ajax: {
         url: 'http://localhost/HRMSGLOBALANG/angular/datatable2',
         type: 'POST',
-        // Add the data option to send the organization_id
         data: (d: any) => {
-
           d.date = that.selectedDate;
-          // d contains the default DataTables parameters (start, length, search, order, etc.)
-          // Add your custom parameter here:
-          // d.organization_id = 3;
-          // You can add other parameters like this:
-          // d.another_param = some_value;
         }
       },
       columns: [
@@ -82,17 +79,51 @@ export class OrgtableComponent implements OnInit, AfterViewInit {
       ]
     });
   }
+
   onDateChange(): void {
     localStorage.setItem('orgTableDate', this.selectedDate);
     if (this.dataTable) {
       this.dataTable.ajax.reload();
     }
   }
+
   logout() {
     this.service.logout();
-      localStorage.removeItem('orgTableDate');
-      $('#table2').DataTable().state.clear();
-      location.reload();
+    localStorage.removeItem('orgTableDate');
+    $('#table2').DataTable().state.clear();
+    location.reload();
+  }
 
+  // Angular Method to call PHP backend for Day filtering
+  filterByDay(date: string) {
+    this.http.post('http://localhost/HRMSGLOBALANG/angular/getalldata', { date: date }).subscribe(response => {
+      console.log(response);
+      // Update your table data with the response
+    });
+  }
+
+  // Angular Method to call PHP backend for Week filtering
+  filterByWeek() {
+    const today = new Date(this.selectedDate);
+    const start = new Date(today);
+    start.setDate(today.getDate() - today.getDay()); // Start of the week (Sunday)
+    const end = new Date(today);
+    end.setDate(today.getDate() + (6 - today.getDay())); // End of the week (Saturday)
+
+    const startDate = start.toISOString().split('T')[0]; // Format as 'yyyy-mm-dd'
+    const endDate = end.toISOString().split('T')[0]; // Format as 'yyyy-mm-dd'
+
+    this.http.post('http://localhost/HRMSGLOBALANG/angular/filterByWeek', { startDate, endDate }).subscribe(response => {
+      console.log(response);
+      this.dataTable.ajax.reload(); // Reload the DataTable with filtered data
+    });
+  }
+
+  // Angular Method to call PHP backend for Month filtering
+  filterByMonth(month: string, year: string) {
+    this.http.post('http://localhost/HRMSGLOBALANG/angular/filterByMonth', { month: month, year: year }).subscribe(response => {
+      console.log(response);
+      // Update your table data with the response
+    });
   }
 }

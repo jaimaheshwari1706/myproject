@@ -27,6 +27,7 @@
     "datatables.net-buttons-dt": "^2.4.1",
     "datatables.net-dt": "^1.13.11",
     "file-saver": "^2.0.5",
+    "flatpickr": "^4.6.13",
     "jquery": "^3.7.1",
     "jszip": "^3.10.1",
     "myproject": "file:",
