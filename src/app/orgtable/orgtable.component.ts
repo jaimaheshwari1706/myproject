@@ -71,10 +71,10 @@ export class OrgtableComponent implements OnInit, AfterViewInit {
         }
       },
       columns: [
-        { data: 'Id', title: 'ID' },
-        { data: 'Name', title: 'Name' },
-        { data: 'Code', title: 'Code', orderable: false },
-        { data: 'OrganizationId', title: 'Organization ID', orderable: false },
+        { data: 'id', title: 'ID' },
+        { data: 'name', title: 'Name' },
+        { data: 'code', title: 'Code', orderable: false },
+        { data: 'organizationid', title: 'Organization ID', orderable: false },
         { data: 'gender', title: 'Gender', orderable: false },
       ]
     });
@@ -120,10 +120,37 @@ export class OrgtableComponent implements OnInit, AfterViewInit {
   }
 
   // Angular Method to call PHP backend for Month filtering
-  filterByMonth(month: string, year: string) {
-    this.http.post('http://localhost/HRMSGLOBALANG/angular/filterByMonth', { month: month, year: year }).subscribe(response => {
+  filterByMonth() {
+    const today = new Date();
+    const month = (today.getMonth() + 1).toString();
+    const year = today.getFullYear().toString();
+  
+    const body = new URLSearchParams();
+    body.set('month', month);
+    body.set('year', year);
+  
+    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+  
+    this.http.post<any>('http://localhost/HRMSGLOBALANG/angular/filterByMonth', body.toString(), { headers }).subscribe(response => {
       console.log(response);
-      // Update your table data with the response
+  
+      if (response.data && response.data.length > 0 && this.dataTable) {
+        this.dataTable.clear(); // clear old data
+        this.dataTable.rows.add(response.data); // add new rows
+        this.dataTable.draw(); // redraw table
+      } else {
+        // If no data
+        this.dataTable.clear();
+        this.dataTable.draw();
+  
+        // Insert a fake row manually to show "No Data Available"
+        $('#table2 tbody').html(
+          '<tr><td colspan="5" class="text-center">No Data Available for this month</td></tr>'
+        );
+      }
+    }, error => {
+      console.error('Error fetching data for current month', error);
     });
   }
+  
 }
