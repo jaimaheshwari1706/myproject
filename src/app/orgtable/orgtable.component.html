@@ -1,28 +1,39 @@
 <div class="container p-3">
   <div class="container py-5">
     <div class="d-flex justify-content-end mb-3">
-      <a class="btn btn-danger" (click)="logout()">Logout</a>
+      <button class="btn btn-danger" (click)="logout()">Logout</button>
     </div>
+
     <h3 class="my-5 text-center"><b>O - R - G ____ C - R - U - D</b></h3>
-    <div style="display: flex; justify-content: end; align-items: end; gap: 2px;">
-      <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="bi bi-calendar">
-      <button type="button" class="btn btn-primary" (click)="filterByDay(selectedDate)">Day</button>
-      <button type="button" class="btn btn-primary" (click)="filterByWeek()">Week</button>
-        <button type="button" class="btn btn-primary" (click)="filterByMonth()">Month</button>
+
+    <div class="d-flex justify-content-end align-items-end gap-1 mb-3">
+      <button class="btn btn-secondary" (click)="previous()">Previous</button>
+      <button class="btn btn-secondary" (click)="next()">Next</button>
     </div>
-    <table id="table2" class="display" width="100%">
+
+    <div class="d-flex justify-content-end align-items-end gap-2 mb-3">
+      <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="form-control" style="width: auto;">
+      <button class="btn btn-primary" (click)="filterByDay()">Day</button>
+      <button class="btn btn-primary" (click)="filterByWeek()">Week</button>
+      <button class="btn btn-primary" (click)="filterByMonth()">Month</button>
+    </div>
+
+    <h1 class="text-center my-3">
+      <small *ngIf="filterType === 'week'">{{ weekStartDate | date:'d MMM' }} - {{ weekEndDate | date:'d MMM, yyyy' }}</small>
+      <small *ngIf="filterType === 'month'">{{ selectedDate | date:'MMMM yyyy' }}</small>
+      <small *ngIf="filterType === 'day'">{{ selectedDate | date:'d MMM yyyy' }}</small>
+    </h1>
+
+    <table id="table2" class="display table table-striped table-bordered" width="100%">
       <thead>
         <tr>
           <th>Id</th>
           <th>Name</th>
           <th>Code</th>
-          <th>OrganizationId</th>
-          <th>Gender</th>
+          <th>Organization ID</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Data will be populated here -->
-      </tbody>
+      <tbody></tbody>
     </table>
   </div>
 </div>

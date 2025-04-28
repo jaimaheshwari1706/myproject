@@ -1,30 +1,39 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { UserserviceService } from '../userservice.service';
 import { HttpClient } from '@angular/common/http';
-declare var $: any; // Keep jQuery declaration if needed
+declare var $: any;
 
 @Component({
   selector: 'app-orgtable',
   templateUrl: './orgtable.component.html',
-  styleUrls: ['./orgtable.component.css']
+  styleUrls: ['./orgtable.component.css'],
 })
 export class OrgtableComponent implements OnInit, AfterViewInit {
-  startDate: string = '';
-  endDate: string = '';
-  selectedMonth: string = '';
-  selectedYear: string = '';
   dataTable: any;
-  selectedDate: string = new Date().toISOString().substring(0, 10); // default to today
+  selectedDate: string = '';
+  filterType: string = 'month';
+  dateSelected: boolean = false;
+  weekStartDate: string = '';
+  weekEndDate: string = '';
 
-  constructor(private service: UserserviceService,
-    private http: HttpClient
-  ) { }
+  constructor(
+    private service: UserserviceService,
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    // Load saved date from localStorage
-    const savedDate = localStorage.getItem('orgTableDate');
-    if (savedDate) {
-      this.selectedDate = savedDate;
+    this.loadSavedFilters();
+
+    if (!this.selectedDate) {
+      const today = new Date();
+      this.selectedDate = today.toISOString().substring(0, 10);
+      localStorage.setItem('orgTableDate', this.selectedDate);
+    }
+
+    if (!this.filterType) {
+      this.filterType = 'month';
+      localStorage.setItem('orgTableFilterType', 'month');
     }
   }
 
@@ -32,125 +41,189 @@ export class OrgtableComponent implements OnInit, AfterViewInit {
     this.loadtable();
   }
 
+  loadSavedFilters(): void {
+    const savedDate = localStorage.getItem('orgTableDate');
+    const savedFilterType = localStorage.getItem('orgTableFilterType');
+    const savedWeekStart = localStorage.getItem('orgTableWeekStart');
+    const savedWeekEnd = localStorage.getItem('orgTableWeekEnd');
+
+    if (savedDate) {
+      this.selectedDate = savedDate;
+      this.dateSelected = true;
+    }
+    if (savedFilterType) {
+      this.filterType = savedFilterType;
+    }
+    if (savedWeekStart && savedWeekEnd) {
+      this.weekStartDate = savedWeekStart;
+      this.weekEndDate = savedWeekEnd;
+    }
+  }
+
   loadtable(): void {
     const that = this;
 
     this.dataTable = $('#table2').DataTable({
       processing: true,
-      serverSide: true,
+      serverSide: false,
       stateSave: true,
+      paging: true,
       lengthMenu: [5, 10, 25, 50],
       info: false,
-      dom: 'Blfrtip.',
+      dom: 'Blfrtip',
       buttons: [
-        {
-          extend: 'csvHtml5',
-          exportOptions: {
-            modifier: {
-              page: 'all'
-            },
-            columns: ':visible'
-          }
-        },
-        {
-          extend: 'pdfHtml5',
-          orientation: 'landscape',
-          exportOptions: {
-            modifier: {
-              page: 'all'
-            },
-            columns: ':visible'
-          }
-        }
+        { extend: 'csvHtml5', exportOptions: { columns: ':visible' } },
+        { extend: 'pdfHtml5', orientation: 'landscape', exportOptions: { columns: ':visible' } },
       ],
       ajax: {
-        url: 'http://localhost/HRMSGLOBALANG/angular/datatable2',
+        url: 'http://localhost/HRMSGLOBALANG/angular/index',
         type: 'POST',
         data: (d: any) => {
-          d.date = that.selectedDate;
-        }
+          if (that.filterType === 'week') {
+            d.weekStartDate = that.weekStartDate;
+            d.weekEndDate = that.weekEndDate;
+            d.filterType = 'week';
+          } else {
+            d.date = that.selectedDate;
+            d.filterType = that.filterType;
+          }
+        },
       },
       columns: [
         { data: 'id', title: 'ID' },
         { data: 'name', title: 'Name' },
         { data: 'code', title: 'Code', orderable: false },
         { data: 'organizationid', title: 'Organization ID', orderable: false },
-        { data: 'gender', title: 'Gender', orderable: false },
-      ]
+      ],
+      stateSaveCallback: (settings: any, data: any) => {
+        localStorage.setItem('DataTables_table2', JSON.stringify(data));
+      },
+      stateLoadCallback: (settings: any) => {
+        const saved = localStorage.getItem('DataTables_table2');
+        return saved ? JSON.parse(saved) : null;
+      }
     });
   }
 
   onDateChange(): void {
+    this.dateSelected = true;
+    this.filterType = 'day';
     localStorage.setItem('orgTableDate', this.selectedDate);
+
     if (this.dataTable) {
       this.dataTable.ajax.reload();
     }
   }
 
-  logout() {
+  logout(): void {
     this.service.logout();
     localStorage.removeItem('orgTableDate');
+    localStorage.removeItem('orgTableFilterType');
+    localStorage.removeItem('orgTableWeekStart');
+    localStorage.removeItem('orgTableWeekEnd');
+    localStorage.removeItem('DataTables_table2');
+
     $('#table2').DataTable().state.clear();
-    location.reload();
+    this.dataTable.destroy();
   }
 
-  // Angular Method to call PHP backend for Day filtering
-  filterByDay(date: string) {
-    this.http.post('http://localhost/HRMSGLOBALANG/angular/getalldata', { date: date }).subscribe(response => {
-      console.log(response);
-      // Update your table data with the response
-    });
+  filterByDay(): void {
+    this.filterType = 'day';
+    localStorage.setItem('orgTableFilterType', 'day');
+
+    if (this.dataTable) {
+      this.dataTable.ajax.reload();
+    }
   }
 
-  // Angular Method to call PHP backend for Week filtering
-  filterByWeek() {
-    const today = new Date(this.selectedDate);
-    const start = new Date(today);
-    start.setDate(today.getDate() - today.getDay()); // Start of the week (Sunday)
-    const end = new Date(today);
-    end.setDate(today.getDate() + (6 - today.getDay())); // End of the week (Saturday)
+  filterByWeek(): void {
+    this.filterType = 'week';
+    localStorage.setItem('orgTableFilterType', 'week');
 
-    const startDate = start.toISOString().split('T')[0]; // Format as 'yyyy-mm-dd'
-    const endDate = end.toISOString().split('T')[0]; // Format as 'yyyy-mm-dd'
+    const date = this.selectedDate ? new Date(this.selectedDate) : new Date();
+    this.selectedDate = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().substring(0, 10);
 
-    this.http.post('http://localhost/HRMSGLOBALANG/angular/filterByWeek', { startDate, endDate }).subscribe(response => {
-      console.log(response);
-      this.dataTable.ajax.reload(); // Reload the DataTable with filtered data
-    });
+    this.calculateWeekDates(new Date(this.selectedDate));
+
+    if (this.dataTable) {
+      this.dataTable.ajax.reload();
+    }
   }
 
-  // Angular Method to call PHP backend for Month filtering
-  filterByMonth() {
-    const today = new Date();
-    const month = (today.getMonth() + 1).toString();
-    const year = today.getFullYear().toString();
-  
-    const body = new URLSearchParams();
-    body.set('month', month);
-    body.set('year', year);
-  
-    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
-  
-    this.http.post<any>('http://localhost/HRMSGLOBALANG/angular/filterByMonth', body.toString(), { headers }).subscribe(response => {
-      console.log(response);
-  
-      if (response.data && response.data.length > 0 && this.dataTable) {
-        this.dataTable.clear(); // clear old data
-        this.dataTable.rows.add(response.data); // add new rows
-        this.dataTable.draw(); // redraw table
-      } else {
-        // If no data
-        this.dataTable.clear();
-        this.dataTable.draw();
-  
-        // Insert a fake row manually to show "No Data Available"
-        $('#table2 tbody').html(
-          '<tr><td colspan="5" class="text-center">No Data Available for this month</td></tr>'
-        );
-      }
-    }, error => {
-      console.error('Error fetching data for current month', error);
-    });
+  filterByMonth(): void {
+    this.filterType = 'month';
+    localStorage.setItem('orgTableFilterType', 'month');
+
+    if (this.dataTable) {
+      this.dataTable.ajax.reload();
+    }
   }
-  
+
+  calculateWeekDates(baseDate?: Date): void {
+    const date = baseDate
+      ? new Date(baseDate)
+      : new Date(this.selectedDate);
+
+    const day = date.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() + diffToMonday);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    this.weekStartDate = weekStart.toISOString().substring(0, 10);
+    this.weekEndDate = weekEnd.toISOString().substring(0, 10);
+
+    localStorage.setItem('orgTableWeekStart', this.weekStartDate);
+    localStorage.setItem('orgTableWeekEnd', this.weekEndDate);
+  }
+
+  previous(): void {
+    if (this.filterType === 'day') {
+      const date = new Date(this.selectedDate);
+      date.setDate(date.getDate() - 1);
+      this.selectedDate = date.toISOString().substring(0, 10);
+    } 
+    else if (this.filterType === 'week') {
+      const start = new Date(this.weekStartDate);
+      start.setDate(start.getDate() - 7);
+      this.selectedDate = start.toISOString().substring(0, 10);
+      this.calculateWeekDates(start);
+    }
+     else if (this.filterType === 'month') {
+      const date = new Date(this.selectedDate);
+      date.setMonth(date.getMonth() - 1);
+      this.selectedDate = date.toISOString().substring(0, 10);
+    }
+
+    localStorage.setItem('orgTableDate', this.selectedDate);
+
+    if (this.dataTable) {
+      this.dataTable.ajax.reload();
+    }
+  }
+
+  next(): void {
+    if (this.filterType === 'day') {
+      const date = new Date(this.selectedDate);
+      date.setDate(date.getDate() + 1);
+      this.selectedDate = date.toISOString().substring(0, 10);
+    } else if (this.filterType === 'week') {
+      const start = new Date(this.weekStartDate);
+      start.setDate(start.getDate() + 7);
+      this.selectedDate = start.toISOString().substring(0, 10);
+      this.calculateWeekDates(start);
+    } else if (this.filterType === 'month') {
+      const date = new Date(this.selectedDate);
+      date.setMonth(date.getMonth() + 1);
+      this.selectedDate = date.toISOString().substring(0, 10);
+    }
+
+    localStorage.setItem('orgTableDate', this.selectedDate);
+
+    if (this.dataTable) {
+      this.dataTable.ajax.reload();
+    }
+  }
 }
